@@ -1,0 +1,15 @@
+/* static/admin/css/custom_admin.css */
+
+.field-languages_available {
+  white-space: nowrap;
+}
+
+.collapsed {
+  border-left: 2px solid #79aec8;
+  margin-left: 10px;
+  padding-left: 10px;
+}
+
+.field-question_preview {
+  font-weight: bold;
+}
