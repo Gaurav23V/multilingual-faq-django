@@ -1,6 +1,7 @@
 # faqs/models.py
 
 from django.db import models
+from django.conf import settings
 from django.core.cache import cache
 from ckeditor.fields import RichTextField
 from django.utils.translation import gettext_lazy as _
@@ -79,15 +80,15 @@ class FAQ(models.Model):
     cached_value = cache.get(cache_key)
 
     if cached_value is None:
-      if lang == 'en':
-        value = getattr(self, field_name)
-      else:
-        value = getattr(self, f'{field_name}_{lang}')
-        if not value: # Fallback to english if translation is not available
-          value = getattr(self, field_name)
+        if lang == 'en':
+            value = getattr(self, field_name)
+        else:
+            value = getattr(self, f'{field_name}_{lang}')
+            if not value:  # Fallback to english if translation is not available
+                value = getattr(self, field_name)
 
-      cache.set(cache_key, value, timeout=settings.CACHE_TTL)
-      return value
+        cache.set(cache_key, value, timeout=settings.CACHE_TTL)
+        return value
 
     return cached_value
 
