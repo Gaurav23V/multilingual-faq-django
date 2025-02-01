@@ -1,10 +1,14 @@
 # faqs/urls.py
 
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import FAQViewSet
+
+router = DefaultRouter()
+router.register(r'faqs', FAQViewSet, basename='faq')
 
 app_name = 'faqs'
 
 urlpatterns = [
-  # URL patterns need to be added here
+  path('', include(router.urls)),
 ]
