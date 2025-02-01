@@ -34,36 +34,36 @@ class FAQ(models.Model):
     return self.question[:100]
 
   def save(self, *args, **kwargs):
-    # Initialize translation service
-    translator = TranslationService()
+    # Check if the object is new or being updated
+    is_new = self._state.adding
 
-    # If this is a new language or the english content has changed
-    if not self.pk or self._state.adding:
-      super().save(*args, **kwargs) # Saving first to generate a PK
+    # If new, proceed to generate translations before the first save
+    if is_new:
+        # Initialize translation service
+        translator = TranslationService()
 
-      # Translate question and answer to hindi
-      try:
-        self.question_hi = translator.translate_text(self.question, 'hi')
-        self.answer_hi = translator.translate_text(self.answer, 'hi')
-      except Exception as e:
-        logger.error(f"Hindi translation failed: {str(e)}")
+        # Generate translations
+        try:
+            self.question_hi = translator.translate_text(self.question, 'hi')
+            self.answer_hi = translator.translate_html(self.answer, 'hi')
+        except Exception as e:
+            logger.error(f"Hindi translation failed: {str(e)}")
+            self.question_hi = self.question  # Fallback to English
+            self.answer_hi = self.answer
 
-      # Translate question and answer to bengali
-      try:
-        self.question_bn = translator.translate_text(self.question, 'bn')
-        self.answer_bn = translator.translate_text(self.answer, 'bn')
-      except Exception as e:
-        logger.error(f"Bengali translation failed: {str(e)}")
+        try:
+            self.question_bn = translator.translate_text(self.question, 'bn')
+            self.answer_bn = translator.translate_html(self.answer, 'bn')
+        except Exception as e:
+            logger.error(f"Bengali translation failed: {str(e)}")
+            self.question_bn = self.question  # Fallback to English
+            self.answer_bn = self.answer
 
-      # clear cache for this FAQ
-      self.clear_cache()
+    # Clear cache before saving
+    self.clear_cache()
 
-      # Save again with translations
-      super().save(*args, **kwargs)
-    else:
-      # clear cache before saving update
-      self.clear_cache()
-      super().save(*args, **kwargs)
+    # Save the object once
+    super().save(*args, **kwargs)
 
   def clear_cache(self):
     """Clear all cached version of this FAQ"""
@@ -83,10 +83,14 @@ class FAQ(models.Model):
         if lang == 'en':
             value = getattr(self, field_name)
         else:
-            value = getattr(self, f'{field_name}_{lang}')
-            if not value:  # Fallback to english if translation is not available
-                value = getattr(self, field_name)
-
+          translation_field = f'{field_name}_{lang}'
+          if hasattr(self, translation_field):
+              value = getattr(self, translation_field)
+              if not value:  # Fallback to english if translation is not available
+                  value = getattr(self, field_name)
+          else:
+            value = getattr(self, field_name)
+            
         cache.set(cache_key, value, timeout=settings.CACHE_TTL)
         return value
 

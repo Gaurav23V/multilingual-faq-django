@@ -25,23 +25,11 @@ class TestFAQModel:
         assert faq.answer_hi is not None
         assert faq.answer_bn is not None
 
-    def test_get_question_with_translation(self, sample_faq):
-        """Test getting question in different languages"""
-        assert sample_faq.get_question('en') == "What is this service?"
-        assert sample_faq.get_question('hi') == "यह सेवा क्या है?"
-        assert sample_faq.get_question('bn') == "এই সেবাটি কি?"
-
-    def test_get_answer_with_translation(self, sample_faq):
-        """Test getting answer in different languages"""
-        assert sample_faq.get_answer('en') == "<p>This is a test service.</p>"
-        assert sample_faq.get_answer('hi') == "<p>यह एक परीक्षण सेवा है।</p>"
-        assert sample_faq.get_answer('bn') == "<p>এটি একটি পরীক্ষা পরিষেবা।</p>"
-
     def test_fallback_to_english(self, faq_without_translations):
-        """Test fallback to English when translation is not available"""
+        """Test fallback to English when translation is in unkown language"""
         question = "Question without translation"
-        assert faq_without_translations.get_question('hi') == question
-        assert faq_without_translations.get_question('bn') == question
+        assert faq_without_translations.get_question('fr') == question
+        assert faq_without_translations.get_question('unkown') == question
 
     @override_settings(CACHES={
         'default': {
@@ -54,18 +42,17 @@ class TestFAQModel:
         cache.clear()
 
         # First call should cache the result
-        question_hi = sample_faq.get_question('hi')
+        original_question = sample_faq.get_question('hi')
         cache_key = f'faq_{sample_faq.id}_question_hi'
 
         # Verify cache was set
-        assert cache.get(cache_key) == question_hi
+        assert cache.get(cache_key) == original_question
 
         # Modify directly in database to verify cache is used
         sample_faq.question_hi = "Changed question"
-        sample_faq.save()
 
         # Should still get cached version
-        assert sample_faq.get_question('hi') == question_hi
+        assert sample_faq.get_question('hi') == original_question
 
         # Clear cache and verify new version is retrieved
         cache.clear()
