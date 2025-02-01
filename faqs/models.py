@@ -4,6 +4,7 @@ from django.db import models
 from django.core.cache import cache
 from ckeditor.fields import RichTextField
 from django.utils.translation import gettext_lazy as _
+from .utils import TranslationService
 
 class FAQ(models.Model):
   # Base field english
@@ -31,17 +32,62 @@ class FAQ(models.Model):
   def __str__(self):
     return self.question[:100]
 
+  def save(self, *args, **kwargs):
+    # Initialize translation service
+    translator = TranslationService()
+
+    # If this is a new language or the english content has changed
+    if not self.pk or self._state.adding:
+      super().save(*args, **kwargs) # Saving first to generate a PK
+
+      # Translate question and answer to hindi
+      try:
+        self.question_hi = translator.translate_text(self.question, 'hi')
+        self.answer_hi = translator.translate_text(self.answer, 'hi')
+      except Exception as e:
+        logger.error(f"Hindi translation failed: {str(e)}")
+
+      # Translate question and answer to bengali
+      try:
+        self.question_bn = translator.translate_text(self.question, 'bn')
+        self.answer_bn = translator.translate_text(self.answer, 'bn')
+      except Exception as e:
+        logger.error(f"Bengali translation failed: {str(e)}")
+
+      # clear cache for this FAQ
+      self.clear_cache()
+
+      # Save again with translations
+      super().save(*args, **kwargs)
+    else:
+      # clear cache before saving update
+      self.clear_cache()
+      super().save(*args, **kwargs)
+
+  def clear_cache(self):
+    """Clear all cached version of this FAQ"""
+    languages = ['en', 'hi', 'bn']
+    for lang in languages:
+      cache.delete(f'faq_{self.id}_question_{lang}')
+      cache.delete(f'faq_{self.id}_answer_{lang}')
+      cache.delete(f'faq_list_{lang}')
+      cache.delete(f'faq_detail_{self.id}_{lang}')
+
   def get_cached_translation(self, field_name, lang):
     """Get cached translation for a field"""
     cache_key = f'faq_{self.id}_{field_name}_{lang}'
     cached_value = cache.get(cache_key)
 
     if cached_value is None:
-      translated_field = getattr(self, f'{field_name}_{lang}', None)
-      if translated_field:
-        cache.set(cache_key, translated_field, timeout=3600) # Cache for 1 hour
-        return translated_field
-      return getattr(self, field_name) # Fallback to english if the other language does not exist
+      if lang == 'en':
+        value = getattr(self, field_name)
+      else:
+        value = getattr(self, f'{field_name}_{lang}')
+        if not value: # Fallback to english if translation is not available
+          value = getattr(self, field_name)
+
+      cache.set(cache_key, value, timeout=settings.CACHE_TTL)
+      return value
 
     return cached_value
 
