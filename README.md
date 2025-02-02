@@ -51,6 +51,9 @@ A Django-based application that provides a multilingual FAQ (Frequently Asked Qu
 - **pip**
 - **Docker (optional, for Docker setup)**
 - **Redis (if running locally without Docker)**
+```bash
+docker run -d -p 6379:6379 --name redis-server redis
+```
 
 ### Local Setup
 
@@ -66,7 +69,7 @@ cd multilingual-faq-system
 #### 2. Create a Virtual Environment
 
 ```bash
-python -m venv venv
+conda create --name venv python=3.10
 ```
 
 Activate the virtual environment:
@@ -74,13 +77,13 @@ Activate the virtual environment:
 - On Linux/Mac:
 
   ```bash
-  source venv/bin/activate
+  conda activate venv
   ```
 
 - On Windows:
 
   ```bash
-  venv\Scripts\activate
+  conda activate venv
   ```
 
 #### 3. Install Dependencies
@@ -98,7 +101,7 @@ Create a `.env` file in the root directory:
 SECRET_KEY=your-secret-key
 DEBUG=1
 ALLOWED_HOSTS=localhost,127.0.0.1
-REDIS_URL=redis://redis:6379/1
+REDIS_URL=redis://127.0.0.1:6379/1
 ```
 
 - Replace `your-secret-key` with a securely generated key.
@@ -135,6 +138,14 @@ In a new terminal:
 
 ```bash
 docker-compose exec web python manage.py createsuperuser
+```
+
+#### 3. Run the tests in Docker
+
+In a new terminal:
+
+```bash
+docker-compose exec web pytest
 ```
 
 ---
