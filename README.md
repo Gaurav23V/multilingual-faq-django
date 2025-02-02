@@ -98,7 +98,7 @@ Create a `.env` file in the root directory:
 SECRET_KEY=your-secret-key
 DEBUG=1
 ALLOWED_HOSTS=localhost,127.0.0.1
-REDIS_URL=redis://127.0.0.1:6379/1
+REDIS_URL=redis://redis:6379/1
 ```
 
 - Replace `your-secret-key` with a securely generated key.
