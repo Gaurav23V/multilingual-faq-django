@@ -142,6 +142,15 @@ docker-compose exec web python manage.py createsuperuser
 
 #### 3. Run the tests in Docker
 
+Before running the test you need to update the .env file since the above mentioned dummy env is for local setup:
+
+```env
+SECRET_KEY=your-secret-key
+DEBUG=1
+ALLOWED_HOSTS=localhost,127.0.0.1
+REDIS_URL=redis://redis:6379/1
+```
+
 In a new terminal:
 
 ```bash
